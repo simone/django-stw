@@ -15,7 +15,7 @@ class STWConfigError(template.TemplateSyntaxError):
 
 class FormatSTWImageNode(template.Node):
 
-    def __init__(self, url, alt, **kwargs):
+    def __init__(self, url, alt, css, **kwargs):
         params = {}
         # load defaults if any
         params.update(settings.SHRINK_THE_WEB)
@@ -24,6 +24,7 @@ class FormatSTWImageNode(template.Node):
         self.kwargs = params
         self.url = url
         self.alt = alt
+        self.css = css
 
     @classmethod
     def _buildUrlParams(cls, kwargs):
@@ -52,10 +53,11 @@ class FormatSTWImageNode(template.Node):
     def render(self, context):
         url = self._resolve(self.url, context)
         alt = self._resolve(self.alt, context)
+        css = self._resolve(self.css, context)
         encoded = urllib.urlencode(self._buildUrlParams(self.kwargs))
         if encoded:
             encoded += '&'
-        result =  '''<img src="http://images.shrinktheweb.com/xino.php?%sstwurl=%s" alt="%s"/>''' % (encoded, url, alt)
+        result =  '''<img src="http://images.shrinktheweb.com/xino.php?%sstwurl=%s" alt="%s" class="%s" />''' % (encoded, url, alt, css)
 
         return result
 
@@ -90,15 +92,15 @@ def do_shrinkthewebimage(parser, token):
         Given a template context variable "author" with attributes "url" and
         "description" the following are valid entries in a template file:
 
-        {% shrinkthewebimage author.url "sm" '' %}
+        {% shrinkthewebimage author.url "sm" '' "css_class" %}
 
-        {% shrinkthewebimage author.url "lg" author.url %}
+        {% shrinkthewebimage author.url "lg" author.url "css_class" %}
 
-        {% shrinkthewebimage author.url "xlg" author.description %}
+        {% shrinkthewebimage author.url "xlg" author.description "css_class" %}
 
     """
     bits = token.split_contents()
-    if len(bits) != 4:
+    if len(bits) != 5:
         raise template.TemplateSyntaxError("'%s' tag takes exactly 3 arguments" % bits[0])
     size = bits[2]
     if size[0] == size[-1] and size[0] in ('"', "'"):
@@ -106,7 +108,7 @@ def do_shrinkthewebimage(parser, token):
 
     kwargs = {'stwsize' : size,
               }
-    return FormatSTWImageNode(url=bits[1], alt=bits[3], **kwargs)
+    return FormatSTWImageNode(url=bits[1], alt=bits[3], css=bits[4], **kwargs)
 
 
 def do_stwimage(parser, token):
